@@ -94,39 +94,49 @@ void readInput(char **argv) {
 	//int argCt = 0;
 	getline(cin, line);
 	strcpy(cline, line.c_str());
-	cout << "Line was " << line << endl;
+	//cout << "Line was " << line << endl;
 	for(int i = 0; i < 10; i++) {
 		found = line.find('|');
 		if(found != string::npos) { // if pipe character was not the last character in input string
 			for(int j = 0; j < found; j++) {
-				cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
-				buf[i][j] = cline[j];
+				if(isspace(cline[j])) {
+					//cout << "Setting buf[" << i << "][" << j << "] to \0" << endl;
+					buf[i][j] = '\0';
+				} else {
+					//cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
+					buf[i][j] = cline[j];
+				}
 			}
 			line.erase(0, found + 2); // index past | and the space following it
 			cout << "Remaining characters in line: " << line << endl;
 		} else { // no pipe character or its the last char in the input string
 			for(int j = 0; j < line.length(); j++) {
-				cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
-				buf[i][j] = cline[j];
+				if(isspace(cline[j])) {
+					//cout << "Setting buf[" << i << "][" << j << "] to \0" << endl;
+					buf[i][j] = '\0';
+				} else {
+					//cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
+					buf[i][j] = cline[j];
+				}
 			}
 			i = 10; // to end the loop
 		}
 
 		char* argv[50];
 		int pos = 0;
+
+
 		for (int i = 0; i < 3; i++) {
 			argv[i] = (char*)&buf[0][pos];
-			cout << "buf[0][" << pos << "] is " << argv[i] << endl;
-			cout << strlen(argv[i]) << endl;
-			cout << "argv is " << argv[i] << endl;
+			//cout << strlen(argv[i]) << endl;
 			pos += strlen(argv[i]) + 1; //point to next token
 		}
 		argv[3] = (char*)NULL;
 
+
 		pid_t pid;
 		int status;
 		pid = fork();
-		cout << "Pid is " << pid << endl;
 		if(pid < 0) {
 			perror("Error pid < 0");
 		} else if (pid == 0) {
