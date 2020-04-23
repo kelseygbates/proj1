@@ -86,21 +86,25 @@ int main() {
 	return 0;
 }
 
+// why pointer to char pointer?
 void readInput(char **argv) {
 	char buf[10][500];
 	size_t found;
 	string line;
 	char cline[50];
+	int numArgs;
 	//int argCt = 0;
 	getline(cin, line);
 	strcpy(cline, line.c_str());
 	//cout << "Line was " << line << endl;
 	for(int i = 0; i < 10; i++) {
+	    numArgs = 0;
 		found = line.find('|');
 		if(found != string::npos) { // if pipe character was not the last character in input string
 			for(int j = 0; j < found; j++) {
 				if(isspace(cline[j])) {
 					//cout << "Setting buf[" << i << "][" << j << "] to \0" << endl;
+					numArgs++;
 					buf[i][j] = '\0';
 				} else {
 					//cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
@@ -110,33 +114,48 @@ void readInput(char **argv) {
 			line.erase(0, found + 2); // index past | and the space following it
 			cout << "Remaining characters in line: " << line << endl;
 		} else { // no pipe character or its the last char in the input string
+		    cout << "no pipe found!" << endl;
 			for(int j = 0; j < line.length(); j++) {
 				if(isspace(cline[j])) {
 					//cout << "Setting buf[" << i << "][" << j << "] to \0" << endl;
+					numArgs++;
 					buf[i][j] = '\0';
 				} else {
 					//cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
 					buf[i][j] = cline[j];
 				}
 			}
+			buf[i][line.length()] = '\0'; // need this to inset final null terminating character
 			i = 10; // to end the loop
 		}
 
-		char* argv[50];
+		/*char* argv[50];
 		int pos = 0;
 
-
+        // need to change hard coded 3 so that it works for all number of arguments,
+        // have to introduce temp variable to count this?
 		for (int i = 0; i < 3; i++) {
 			argv[i] = (char*)&buf[0][pos];
 			//cout << strlen(argv[i]) << endl;
 			pos += strlen(argv[i]) + 1; //point to next token
 		}
-		argv[3] = (char*)NULL;
+		argv[3] = (char*)NULL;*/
 
 
 		pid_t pid;
 		int status;
 		pid = fork();
+        char* argv[50];
+        int pos = 0;
+
+        // need to change hard coded 3 so that it works for all number of arguments,
+        // have to introduce temp variable to count this?
+        for (int i = 0; i < numArgs + 1; i++) {
+            argv[i] = (char*)&buf[0][pos];
+            //cout << strlen(argv[i]) << endl;
+            pos += strlen(argv[i]) + 1; //point to next token
+        }
+        argv[numArgs + 1] = (char*)NULL;
 		if(pid < 0) {
 			perror("Error pid < 0");
 		} else if (pid == 0) {
