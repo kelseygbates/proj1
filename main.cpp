@@ -4,13 +4,13 @@ using namespace std;
 
 int main() {
 	myshell shell;
-	shell.readInput();
+	shell.readInput2();
 
-	//if(shell.pipes > 0) {
+	if(shell.pipes > 0) {
 		//shell.makePipes();
-	//} else {
+	} else {
 		shell.runSingleCmnd();
-	//}
+	}
 
 	return 0;
 }

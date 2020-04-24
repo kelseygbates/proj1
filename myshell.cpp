@@ -22,14 +22,54 @@ myshell::myshell() {
 	cout << "myshell$";
 }
 
+void myshell::readInput2() {
+	string line;
+	char cline[1000];
+	getline(cin, line);
+	strcpy(cline, line.c_str());
+	bool token_start = false;
+	int cmds = 0;
+	int k = 0;
+	for(int j = 0; j < strlen(cline); j++) {
+		if (cline[j] == '|') {
+			cmds++;
+			pipes++;
+			k = 0;  // increase row
+			token_start = false;
+			cout << "Next command" << endl;
+		} else if (cline[j] == ' ') {
+			if(token_start) {
+				cout << "Setting buf[" << cmds << "][" << k << "] to backslash 0" << endl;
+				buf[cmds][k++] = '\0';
+				token_start = false;
+			}
+		} else {
+			if(!token_start) {
+				argCt[cmds]++;
+			}
+			token_start = true;
+			cout << "Setting buf[" << cmds << "][" << k << "] to " << cline[j] << endl;
+			buf[cmds][k++] = cline[j];
+		}
+	}
+	if(token_start) {
+		cout << "Setting buf[" << cmds << "][" << k << "] to backslash 0" << endl;
+		buf[cmds][k] = '\0';
+	}
+	cout << "Setting buf[" << cmds << "][" << k+1 << "] to backslash 0" << endl;
+	buf[cmds][k+1] = '\0';
+	cout << "argument count for command " <<cmds << " is " << argCt[cmds] << endl;
+}
+
 void myshell::readInput() {
 	size_t found;
 	string line;
 	int lineLen = line.length();
-	char cline[50];
+	char cline[1000];
 	getline(cin, line);
 	strcpy(cline, line.c_str());
-	for (int i = 0; i < 10; i++) {
+
+	for (int i = 0; i < MAX_ARGS; i++) {
 		found = line.find('|');
 		cout << found << endl;
 		if (found < string::npos) { // if pipe character was not the last character in input string
@@ -37,11 +77,11 @@ void myshell::readInput() {
 			cout << "pipes found: " << pipes << endl;
 			for (int j = 0; j < found; j++) {
 				if (isspace(cline[j])) {
-					//cout << "Setting buf[" << i << "][" << j << "] to backslash 0" << endl;
+					cout << "Setting buf[" << i << "][" << j << "] to backslash 0" << endl;
 					argCt[i]++;
 					buf[i][j] = '\0';
 				} else {
-					//cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
+					cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
 					buf[i][j] = cline[j];
 				}
 			}
@@ -55,12 +95,12 @@ void myshell::readInput() {
 			for (int j = 0; j < line.length(); j++) {
 				if (isspace(cline[j])) {
 					if(j != lineLen) {
-						//cout << "Setting buf[" << i << "][" << j << "] to backslash 0" << endl;
+						cout << "Setting buf[" << i << "][" << j << "] to backslash 0" << endl;
 						argCt[i]++;
 						buf[i][j] = '\0';
 					}
 				} else {
-					//cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
+					cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
 					buf[i][j] = cline[j];
 				}
 			}
@@ -69,28 +109,26 @@ void myshell::readInput() {
 			i = 10; // to end the loop
 		}
 	}
-	cout << "argct for arg 0 " << argCt[0] << endl;
-	cout << "argct for arg 1 " << argCt[1] << endl;
-	cout << "argct for arg 2 " << argCt[2] << endl;
+//	cout << "argct for arg 0 " << argCt[0] << endl;
+//	cout << "argct for arg 1 " << argCt[1] << endl;
+//	cout << "argct for arg 2 " << argCt[2] << endl;
 
 
 }
 
-char* myshell::parseCommand(int cmdIdx) {
+void myshell::parseCommand(int cmdIdx) {
 	int pos = 0;
-	cout << "making argv for command " << cmdIdx << " " << endl;
-	char *argv[MAX_ARGS];
-	printf("%s\n", buf[cmdIdx]);
+	cout << endl << "Making argument list for command " << cmdIdx << endl;
+	//printf("%s\n", buf[cmdIdx]);
 	for (int i = 0; i < argCt[cmdIdx]; i++) {
-		argv[i] = (char *)&buf[cmdIdx][pos];
-		cout << "making argv[" << i << "] = ";
+		argv[i] = &buf[cmdIdx][pos];
+		cout << "argv[" << i << "] = ";
 		printf("%s\n", (char*)&buf[cmdIdx][pos]);
 		//cout << strlen(argv[i]) << endl;
 		pos += strlen(argv[i]) + 1; //point to next token
 	}
-	cout << "making argv[" << argCt[cmdIdx] << "] = null" << endl;
+	cout << "argv[" << argCt[cmdIdx] << "] = null" << endl;
 	argv[argCt[cmdIdx]] = (char *) NULL;
-	return *argv;
 }
 
 
@@ -122,14 +160,15 @@ void myshell::runPipeCmnd() {
 
 void myshell::runSingleCmnd() {
 	pid_t pid;
-	int index = 0;
-	char *args = parseCommand(index);
+	int index = 0; // only one command
+	parseCommand(index);
+	cout << "Run single" << endl;
 	int status;
 	pid = fork();
 	if (pid < 0) {
 		perror("Error pid < 0");
 	} else if (pid == 0) {
-		execvp(&args[0], &args);
+		execvp(argv[0], argv);
 		perror("execvp error");
 		exit(1);
 	} else {
@@ -139,58 +178,72 @@ void myshell::runSingleCmnd() {
 }
 
 
-int myshell::makePipes() {
-	//pid_t pid;
-	cout << "enter makePipes" << endl;
-	int in = 0;
-	int pipeStatus;
-	int fd[2];
-	int i;
-	for(i = 0; i < pipes - 1; i++) {
-		pipeStatus = pipe(fd);
-		if(pipeStatus < 0) {
-			cout << "pipe error" << endl;
-		}
-		pipeStatus = makePipedProcess(in, fd[1], i);
-		cout << "pipe status " << pipeStatus << endl;
-		close(fd[1]);
-		in = fd[0];
-	}
-	if(in != 0) {
-		dup2(in, 0);
+//int myshell::makePipes() {
+//	//pid_t pid;
+//	int in = 0;
+//	int pipeStatus;
+//	int fd[2];
+//	int i;
+//	for(i = 0; i < pipes - 1; i++) {
+//		pipeStatus = pipe(fd);
+//		if(pipeStatus < 0) {
+//			cout << "pipe error" << endl;
+//		}
+//		pipeStatus = makePipedProcess(in, fd[1], i);
+//		cout << "pipe status " << pipeStatus << endl;
+//		close(fd[1]);
+//		in = fd[0];
+//	}
+//	if(in != 0) {
+//		dup2(in, 0);
+//
+//	}
+//	char* args = parseCommand(i);
+//	cout << args << endl;
+//	//pipeStatus = execvp(&buf[i][0], (char *const *)buf[i]);
+//	pipeStatus = execvp((const char*)&args[0], (char *const *)&args);
+//
+//	perror("execvp error in makePipes");
+//	return pipeStatus;
+//}
 
-	}
-	char* args = parseCommand(i);
-	cout << args << endl;
-	//pipeStatus = execvp(&buf[i][0], (char *const *)buf[i]);
-	pipeStatus = execvp((const char*)&args[0], (char *const *)&args);
+/*
+ * First process: if i is current process position
+ * access i - 1 and i
+ * i - 1: read data
+ * 	Make sure this is not negative
+ * i: write data
+ * 	Make sure i < n - 1
+ * dup2
+ *
+ * close all pipes
+ *
+ * construct argument
+ *
+ */
 
-	perror("execvp error in makePipes");
-	return pipeStatus;
-}
-
-int myshell::makePipedProcess(int in, int out, int cur) {
-	pid_t pid;
-	int status = -1;
-	if((pid = fork()) == 0) {
-		if(in != 0) {
-			dup2(in, 0);
-			close(in);
-		}
-		if(out != 1) {
-			dup2(out, 1);
-			close(out);
-		}
-		char* args = parseCommand(cur);
-		//pid = execvp((const char*)&buf[cur][0], (char *const *)&buf[cur]);
-		pid = execvp((const char*)&args[0], (char *const *)&args);
-		perror("execvp error in makePipedProcess");
-
-	} else {
-		waitpid(pid, &status, 0);
-		completed++;
-		cout << endl << "Process " << pid << " exits with status " << status << endl;
-	}
-	return pid;
-
-}
+//int myshell::makePipedProcess(int in, int out, int cur) {
+//	pid_t pid;
+//	int status = -1;
+//	if((pid = fork()) == 0) {
+//		if(in != 0) {
+//			dup2(in, 0);
+//			close(in);
+//		}
+//		if(out != 1) {
+//			dup2(out, 1);
+//			close(out);
+//		}
+//		char* args = parseCommand(cur);
+//		//pid = execvp((const char*)&buf[cur][0], (char *const *)&buf[cur]);
+//		pid = execvp((const char*)&args[0], (char *const *)&args);
+//		perror("execvp error in makePipedProcess");
+//
+//	} else {
+//		waitpid(pid, &status, 0);
+//		completed++;
+//		cout << endl << "Process " << pid << " exits with status " << status << endl;
+//	}
+//	return pid;
+//
+//}

@@ -4,7 +4,7 @@
 
 #ifndef PROJ1_MYSHELL_H
 #define PROJ1_MYSHELL_H
-const int MAX_ARGS = 10;
+const int MAX_ARGS = 500;
 
 
 class myshell {
@@ -12,8 +12,9 @@ public:
 		explicit myshell();
 
 		void readInput();
+		void readInput2();
 
-		char* parseCommand(int index);
+		void parseCommand(int index);
 
 		void runSingleCmnd();
 		void runPipeCmnd();
@@ -26,6 +27,7 @@ private:
 		//char *argv[MAX_ARGS];
 		char buf[10][500];
 		int argCt[MAX_ARGS];
+		char *argv[MAX_ARGS];
 
 
 };
