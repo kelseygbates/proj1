@@ -6,11 +6,11 @@ int main() {
 	myshell shell;
 	shell.readInput();
 
-	if(shell.pipes > 0) {
-		shell.makePipes();
-	} else {
+	//if(shell.pipes > 0) {
+		//shell.makePipes();
+	//} else {
 		shell.runSingleCmnd();
-	}
+	//}
 
 	return 0;
 }
