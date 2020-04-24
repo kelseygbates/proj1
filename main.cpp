@@ -5,7 +5,12 @@ using namespace std;
 int main() {
 	myshell shell;
 	shell.readInput();
-	shell.parseCommand();
-	shell.runSingleCmnd();
+
+	if(shell.pipes > 0) {
+		shell.makePipes();
+	} else {
+		shell.runSingleCmnd();
+	}
+
 	return 0;
 }

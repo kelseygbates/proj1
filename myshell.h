@@ -13,17 +13,20 @@ public:
 
 		void readInput();
 
-		void parseCommand();
+		char* parseCommand(int index);
 
 		void runSingleCmnd();
 		void runPipeCmnd();
-
-private:
-		char *argv[MAX_ARGS];
-		char buf[10][500];
-		int argCt[MAX_ARGS];
+		int makePipes();
+		int makePipedProcess(int in, int out, int cur);
 		int completed; // processes completed
 		int pipes;
+
+private:
+		//char *argv[MAX_ARGS];
+		char buf[10][500];
+		int argCt[MAX_ARGS];
+
 
 };
 #endif //PROJ1_MYSHELL_H
