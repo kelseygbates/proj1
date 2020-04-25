@@ -6,25 +6,30 @@
 #include <cstring>
 #include <array>
 #include <unistd.h>
-using namespace std;
 #include "myshell.h"
+using namespace std;
 
 myshell::myshell() {
-	// make argCt an array of integers, one for each pipe
-	// initialize argCt to 0 for all pipes
+	// make argCt an array of integers, one for each piped command
+	// initialize argCt to 0 for all commands
 	for(int i = 0; i < MAX_ARGS; i++) {
 		argCt[i] = 0;
 	}
-	// track completed processes
-	completed = 0;
-	// track pipes needed
-	pipes = 0;
+	// track commands needed
+	commands = 1;
 	cout << "myshell$";
 }
 
-void myshell::readInput2() {
+// not sure if we need a destructor for these arrays cuz we didnt call 'new' when we made them
+//myshell::~myshell() {
+//	delete [] argv;
+//	delete [] buf;
+//	delete [] argCt;
+//}
+
+void myshell::readInput() {
 	string line;
-	char cline[1000];
+	char cline[MAX_ARGS];
 	getline(cin, line);
 	strcpy(cline, line.c_str());
 	bool token_start = false;
@@ -32,14 +37,12 @@ void myshell::readInput2() {
 	int k = 0;
 	for(int j = 0; j < strlen(cline); j++) {
 		if (cline[j] == '|') {
-			cmds++;
-			pipes++;
-			k = 0;  // increase row
+			cmds++; // increase row
+			commands++; // increase global commands variable
+			k = 0;
 			token_start = false;
-			cout << "Next command" << endl;
 		} else if (cline[j] == ' ') {
 			if(token_start) {
-				cout << "Setting buf[" << cmds << "][" << k << "] to backslash 0" << endl;
 				buf[cmds][k++] = '\0';
 				token_start = false;
 			}
@@ -48,121 +51,29 @@ void myshell::readInput2() {
 				argCt[cmds]++;
 			}
 			token_start = true;
-			cout << "Setting buf[" << cmds << "][" << k << "] to " << cline[j] << endl;
 			buf[cmds][k++] = cline[j];
 		}
 	}
 	if(token_start) {
-		cout << "Setting buf[" << cmds << "][" << k << "] to backslash 0" << endl;
 		buf[cmds][k] = '\0';
 	}
-	cout << "Setting buf[" << cmds << "][" << k+1 << "] to backslash 0" << endl;
-	buf[cmds][k+1] = '\0';
-	cout << "argument count for command " <<cmds << " is " << argCt[cmds] << endl;
 }
 
-void myshell::readInput() {
-	size_t found;
-	string line;
-	int lineLen = line.length();
-	char cline[1000];
-	getline(cin, line);
-	strcpy(cline, line.c_str());
-
-	for (int i = 0; i < MAX_ARGS; i++) {
-		found = line.find('|');
-		cout << found << endl;
-		if (found < string::npos) { // if pipe character was not the last character in input string
-			pipes++;
-			cout << "pipes found: " << pipes << endl;
-			for (int j = 0; j < found; j++) {
-				if (isspace(cline[j])) {
-					cout << "Setting buf[" << i << "][" << j << "] to backslash 0" << endl;
-					argCt[i]++;
-					buf[i][j] = '\0';
-				} else {
-					cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
-					buf[i][j] = cline[j];
-				}
-			}
-			line.erase(0, found + 2); // index past | and the space following it
-			strcpy(cline, line.c_str());
-			//cout << "Remaining characters in line: " << line << endl;
-		} else { // no pipe character or its the last char in the input string
-			cout << "no pipe found!" << endl;
-			argCt[i] = 1;
-			strcpy(cline, line.c_str());
-			for (int j = 0; j < line.length(); j++) {
-				if (isspace(cline[j])) {
-					if(j != lineLen) {
-						cout << "Setting buf[" << i << "][" << j << "] to backslash 0" << endl;
-						argCt[i]++;
-						buf[i][j] = '\0';
-					}
-				} else {
-					cout << "Setting buf[" << i << "][" << j << "] to " << cline[j] << endl;
-					buf[i][j] = cline[j];
-				}
-			}
-			//cout << "Setting buf[" << i << "][" << lineLen << "] to backslash 0" <<  endl;
-			//buf[i][lineLen] = '\0'; // need this to inset final null terminating character
-			i = 10; // to end the loop
-		}
-	}
-//	cout << "argct for arg 0 " << argCt[0] << endl;
-//	cout << "argct for arg 1 " << argCt[1] << endl;
-//	cout << "argct for arg 2 " << argCt[2] << endl;
-
-
-}
 
 void myshell::parseCommand(int cmdIdx) {
 	int pos = 0;
-	cout << endl << "Making argument list for command " << cmdIdx << endl;
-	//printf("%s\n", buf[cmdIdx]);
 	for (int i = 0; i < argCt[cmdIdx]; i++) {
 		argv[i] = &buf[cmdIdx][pos];
-		cout << "argv[" << i << "] = ";
-		printf("%s\n", (char*)&buf[cmdIdx][pos]);
-		//cout << strlen(argv[i]) << endl;
 		pos += strlen(argv[i]) + 1; //point to next token
 	}
-	cout << "argv[" << argCt[cmdIdx] << "] = null" << endl;
 	argv[argCt[cmdIdx]] = (char *) NULL;
 }
 
-
-void myshell::runPipeCmnd() {
-//	int fds[2]; // file desciptors
-//	//int status; // to show status of child
-//	int pipeRs;
-//	pipeRs = pipe(fds);
-//	if(pipeRs < 0) {
-//		perror("Piping error");
-//	}
-//	pipeRs = fork();
-//	//pid_t pid;
-//	if(pipeRs == 0) {
-//		// child process a
-//		dup2(fds[0], 0);
-//		close(fds[1]);
-//		execvp(argv[0], argv);
-//		perror("failed");
-//	} else {
-//		// child process b
-//		dup2(fds[1], 1);
-//		close(fds[0]);
-//		execvp(argv[0], argv);
-//		perror("failed");
-//	}
-
-}
 
 void myshell::runSingleCmnd() {
 	pid_t pid;
 	int index = 0; // only one command
 	parseCommand(index);
-	cout << "Run single" << endl;
 	int status;
 	pid = fork();
 	if (pid < 0) {
@@ -178,72 +89,56 @@ void myshell::runSingleCmnd() {
 }
 
 
-//int myshell::makePipes() {
-//	//pid_t pid;
-//	int in = 0;
-//	int pipeStatus;
-//	int fd[2];
-//	int i;
-//	for(i = 0; i < pipes - 1; i++) {
-//		pipeStatus = pipe(fd);
-//		if(pipeStatus < 0) {
-//			cout << "pipe error" << endl;
-//		}
-//		pipeStatus = makePipedProcess(in, fd[1], i);
-//		cout << "pipe status " << pipeStatus << endl;
-//		close(fd[1]);
-//		in = fd[0];
-//	}
-//	if(in != 0) {
-//		dup2(in, 0);
-//
-//	}
-//	char* args = parseCommand(i);
-//	cout << args << endl;
-//	//pipeStatus = execvp(&buf[i][0], (char *const *)buf[i]);
-//	pipeStatus = execvp((const char*)&args[0], (char *const *)&args);
-//
-//	perror("execvp error in makePipes");
-//	return pipeStatus;
-//}
+void myshell::runPipeCmnd() {
+	int status;
+	pid_t pid;
+	// step 1: create n - 1 commands if n > 0 where n is number of commands
+	int pipeFds[commands - 1];
+	// is this the correct way to create n - 1 commands?
+	for(int i = 0; i < commands - 1; i++) {
+		status = pipe(&pipeFds[i]);
+		if(status < 0) {
+			perror("could not pipe");
+		}
+	}
+	for(int i = 0; i < commands; i++) {
+		pid = fork();
+		if(pid == 0) {
+			// child process
+			if(i - 1 < 0) { // if first process, in: stdin, out: fd[0]
+				dup2(pipeFds[i], 1); // redirects output to fd[0]
+			} else if(i >= commands - 1) { // if last process, in: fd[i-1], out: stdout
+				dup2(pipeFds[i-1], 0); // takes input from fd[i-1]
+			} else { // otherwise, take input from previous child and send output to next
+				dup2(pipeFds[i-1], 0); // take input from fd[i-1]
+				dup2(pipeFds[i], 1);  // send output to fd[i]
+			}
+			// child closes all pipe file descriptors
+			// should I do it this way?
+			for(int j = 0; j < commands - 1; j++) {
+				close(pipeFds[j]);
+			}
+			// construct args
+			parseCommand(i);
+			execvp(argv[0], argv);
+			perror("execvp error");
+			exit(1);
+		} else if(pid > 0) {
+			// do nothing
+			// why do we do nothing here?
+			// dont we have to wait on the sub-child processes?
+		} else {
+			perror("an error occured");
+		}
+	}
 
-/*
- * First process: if i is current process position
- * access i - 1 and i
- * i - 1: read data
- * 	Make sure this is not negative
- * i: write data
- * 	Make sure i < n - 1
- * dup2
- *
- * close all pipes
- *
- * construct argument
- *
- */
-
-//int myshell::makePipedProcess(int in, int out, int cur) {
-//	pid_t pid;
-//	int status = -1;
-//	if((pid = fork()) == 0) {
-//		if(in != 0) {
-//			dup2(in, 0);
-//			close(in);
-//		}
-//		if(out != 1) {
-//			dup2(out, 1);
-//			close(out);
-//		}
-//		char* args = parseCommand(cur);
-//		//pid = execvp((const char*)&buf[cur][0], (char *const *)&buf[cur]);
-//		pid = execvp((const char*)&args[0], (char *const *)&args);
-//		perror("execvp error in makePipedProcess");
-//
-//	} else {
-//		waitpid(pid, &status, 0);
-//		completed++;
-//		cout << endl << "Process " << pid << " exits with status " << status << endl;
-//	}
-//	return pid;
-//
-//}
+	// parent closes all commands
+	for(int j = 0; j < commands - 1; j++) {
+		close(pipeFds[j]);
+	}
+	// parent waits on all child processes
+	for(int i = 0; i < commands - 1; i++) {
+		waitpid(pid, &status, 0);
+		cout << endl << "Process " << pid << " exits with status " << status << endl;
+	}
+}
