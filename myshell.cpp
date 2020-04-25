@@ -20,7 +20,7 @@ myshell::myshell() {
 	cout << "myshell$";
 }
 
-// not sure if we need a destructor for these arrays cuz we didnt call 'new' when we made them
+// not sure if we need a destructor to deallocate these arrays cuz we didnt call 'new' when we made them
 //myshell::~myshell() {
 //	delete [] argv;
 //	delete [] buf;
@@ -59,16 +59,14 @@ void myshell::readInput() {
 	}
 }
 
-
 void myshell::parseCommand(int cmdIdx) {
 	int pos = 0;
 	for (int i = 0; i < argCt[cmdIdx]; i++) {
 		argv[i] = &buf[cmdIdx][pos];
-		pos += strlen(argv[i]) + 1; //point to next token
+		pos += strlen(argv[i]) + 1;
 	}
 	argv[argCt[cmdIdx]] = (char *) NULL;
 }
-
 
 void myshell::runSingleCmnd() {
 	pid_t pid;
@@ -88,57 +86,57 @@ void myshell::runSingleCmnd() {
 	}
 }
 
-
 void myshell::runPipeCmnd() {
 	int status;
-	pid_t pid;
-	// step 1: create n - 1 commands if n > 0 where n is number of commands
-	int pipeFds[commands - 1];
-	// is this the correct way to create n - 1 commands?
+	pid_t pid[commands - 1];
+	// create n - 1 pipes if n > 0 where n is number of commands
+	int pipeFds[commands - 1][2];
+	// is this the correct way to create n - 1 pipes?
 	for(int i = 0; i < commands - 1; i++) {
-		status = pipe(&pipeFds[i]);
+		status = pipe(pipeFds[i]);
 		if(status < 0) {
 			perror("could not pipe");
 		}
 	}
 	for(int i = 0; i < commands; i++) {
-		pid = fork();
-		if(pid == 0) {
+		pid[i] = fork();
+		if(pid[i] == 0) {
 			// child process
-			if(i - 1 < 0) { // if first process, in: stdin, out: fd[0]
-				dup2(pipeFds[i], 1); // redirects output to fd[0]
-			} else if(i >= commands - 1) { // if last process, in: fd[i-1], out: stdout
-				dup2(pipeFds[i-1], 0); // takes input from fd[i-1]
-			} else { // otherwise, take input from previous child and send output to next
-				dup2(pipeFds[i-1], 0); // take input from fd[i-1]
-				dup2(pipeFds[i], 1);  // send output to fd[i]
+			if(i - 1 >= 0) { // if first process, in: stdin, out: fd[0]
+				dup2(pipeFds[i-1][0], 0); // redirects output from stdin to fd[i]
+				                     // which is fd[0] for this if:statement
 			}
+			if(i < commands - 1) { // if last process, in: fd[i-1], out: stdout
+				dup2(pipeFds[i][1], 1); 			 // takes input from fd[i-1]
+			}
+
 			// child closes all pipe file descriptors
 			// should I do it this way?
 			for(int j = 0; j < commands - 1; j++) {
-				close(pipeFds[j]);
+				close(pipeFds[j][0]);
+				close(pipeFds[j][1]);
 			}
 			// construct args
 			parseCommand(i);
 			execvp(argv[0], argv);
 			perror("execvp error");
 			exit(1);
-		} else if(pid > 0) {
+		} else if(pid[i] > 0) {
 			// do nothing
 			// why do we do nothing here?
 			// dont we have to wait on the sub-child processes?
 		} else {
-			perror("an error occured");
+			perror("an error occurred");
 		}
 	}
-
-	// parent closes all commands
+	// parent closes all file descriptors
 	for(int j = 0; j < commands - 1; j++) {
-		close(pipeFds[j]);
+		close(pipeFds[j][0]);
+		close(pipeFds[j][1]);
 	}
 	// parent waits on all child processes
-	for(int i = 0; i < commands - 1; i++) {
-		waitpid(pid, &status, 0);
-		cout << endl << "Process " << pid << " exits with status " << status << endl;
+	for(int i = 0; i < commands; i++) {
+		waitpid(pid[i], &status, 0);
+		cout << endl << "Process " << pid[i] << " exits with status " << status << endl;
 	}
 }
