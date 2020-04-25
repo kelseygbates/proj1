@@ -88,10 +88,10 @@ void myshell::runSingleCmnd() {
 
 void myshell::runPipeCmnd() {
 	int status;
-	pid_t pid[commands - 1];
+	// separate pids for each child process
+	pid_t pid[commands];
 	// create n - 1 pipes if n > 0 where n is number of commands
 	int pipeFds[commands - 1][2];
-	// is this the correct way to create n - 1 pipes?
 	for(int i = 0; i < commands - 1; i++) {
 		status = pipe(pipeFds[i]);
 		if(status < 0) {
@@ -102,16 +102,14 @@ void myshell::runPipeCmnd() {
 		pid[i] = fork();
 		if(pid[i] == 0) {
 			// child process
-			if(i - 1 >= 0) { // if first process, in: stdin, out: fd[0]
-				dup2(pipeFds[i-1][0], 0); // redirects output from stdin to fd[i]
-				                     // which is fd[0] for this if:statement
+			if(i - 1 >= 0) { // if not first process, take input from previous pipe
+				dup2(pipeFds[i-1][0], 0);
 			}
-			if(i < commands - 1) { // if last process, in: fd[i-1], out: stdout
-				dup2(pipeFds[i][1], 1); 			 // takes input from fd[i-1]
+			if(i < commands - 1) { // if not last process, send output to this pipe
+				dup2(pipeFds[i][1], 1);
 			}
 
 			// child closes all pipe file descriptors
-			// should I do it this way?
 			for(int j = 0; j < commands - 1; j++) {
 				close(pipeFds[j][0]);
 				close(pipeFds[j][1]);
@@ -123,8 +121,6 @@ void myshell::runPipeCmnd() {
 			exit(1);
 		} else if(pid[i] > 0) {
 			// do nothing
-			// why do we do nothing here?
-			// dont we have to wait on the sub-child processes?
 		} else {
 			perror("an error occurred");
 		}
