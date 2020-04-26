@@ -1,2 +1,18 @@
 # proj1
 # CPSC 3500 Project 1
+
+Strengths: Our program is very readable, and tricky bits of code are well commented. Our code is also cleanly broken down into
+           separate source files, making it easier to read.The runtime complexity is pretty decent too with a O(n). 
+           Additionally, our program works for almost all of the test cases listed in the document for functionality.
+           We do not have any memory leaks.
+           
+Weaknesses: The test case for multiple pipes and a lot of data does not work - we get a file not found error. 
+
+Contributions
+      Kelsey: Brought the whole project together, got the parsing and the pipes to work in its final form, 
+      made code much more readable.
+      
+      Nathan: Wrote initial parsing code, got one command test case to work
+      
+      Bailey: Provided crucial insight and advice when debugging 
+     
