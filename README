@@ -1,6 +1,9 @@
 # proj1
 # CPSC 3500 Project 1
 
+Program overview:
+- simulated shell program that executes successive command line arguments by piping them together.
+
 Strengths: Our program is very readable, and tricky bits of code are well commented. Our code is also cleanly broken down into
            separate source files, making it easier to read.The runtime complexity is pretty decent too with a O(n). 
            Additionally, our program works for almost all of the test cases listed in the document for functionality.
